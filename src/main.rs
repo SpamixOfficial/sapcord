@@ -57,7 +57,7 @@ async fn main(spawner: Spawner) {
         .set_power_management(cyw43::PowerManagementMode::PowerSave)
         .await;
 
-    let delay = Duration::from_millis(50);
+    let delay = Duration::from_millis(2);
 
     let mut controls = Controls::init(p.PIN_5, p.PIN_6, p.PIN_7, p.PIN_8, p.PIN_12, p.PIN_13, p.PIN_14, p.PIN_15);
     status_led.set_high();
@@ -74,8 +74,8 @@ async fn main(spawner: Spawner) {
             Button::J => info!("J"),
             Button::K => info!("K"),
             Button::L => info!("L"),
-            _ => info!("None")
+            _ => ()
         };
-        Timer::after(delay).await;
+        //Timer::after(delay).await;
     }
 }
