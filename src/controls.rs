@@ -4,7 +4,7 @@ use embassy_rp::{
 };
 use embassy_time::Instant;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Button {
     W,
     A,
@@ -20,6 +20,7 @@ pub enum Button {
 pub struct Controls {
     pub pressed_button: Button,
     last_press: Instant,
+    last_pressed_button: Button,
     pins: [(Button, Input<'static>); 8],
 }
 
@@ -47,17 +48,22 @@ impl Controls {
         return Self {
             pressed_button: Button::None,
             last_press: Instant::MIN,
+            last_pressed_button: Button::None,
             pins,
         };
     }
     pub async fn check_for_input(&mut self) {
         self.pressed_button = Button::None;
-        if Instant::now().duration_since(self.last_press).as_millis() < 200 {
-            return;
-        }
         for p in &self.pins {
             if p.1.is_low() {
+                if Instant::now().duration_since(self.last_press).as_millis() < 200
+                    && self.last_pressed_button == p.0
+                    && p.0 != Button::None
+                {
+                    return;
+                }
                 self.pressed_button = p.0.clone();
+                self.last_pressed_button = self.pressed_button.clone();
                 self.last_press = Instant::now();
                 break;
             }
