@@ -2,7 +2,8 @@
 #![no_main]
 
 mod st7735r;
-
+mod controls;
+use controls::{Button, Controls};
 use cyw43_pio::PioSpi;
 use defmt::*;
 use embassy_executor::Spawner;
@@ -56,18 +57,25 @@ async fn main(spawner: Spawner) {
         .set_power_management(cyw43::PowerManagementMode::PowerSave)
         .await;
 
-    let delay = Duration::from_secs(1);
+    let delay = Duration::from_millis(50);
 
+    let mut controls = Controls::init(p.PIN_5, p.PIN_6, p.PIN_7, p.PIN_8, p.PIN_12, p.PIN_13, p.PIN_14, p.PIN_15);
     status_led.set_high();
     info!("Everything went fine!");
     
     loop {
-        info!("led on!");
-        control.gpio_set(0, true).await;
-        Timer::after(delay).await;
-
-        info!("led off!");
-        control.gpio_set(0, false).await;
+        controls.check_for_input().await;
+        match controls.pressed_button {
+            Button::W => info!("W"),
+            Button::A => info!("A"),
+            Button::S => info!("S"),
+            Button::D => info!("D"),
+            Button::I => info!("I"),
+            Button::J => info!("J"),
+            Button::K => info!("K"),
+            Button::L => info!("L"),
+            _ => info!("None")
+        };
         Timer::after(delay).await;
     }
 }
