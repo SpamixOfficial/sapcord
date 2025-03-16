@@ -6,7 +6,7 @@ mod st7735;
 use core::cell::RefCell;
 
 use controls::{Button, Controls};
-use cyw43_pio::PioSpi;
+use cyw43_pio::{PioSpi, DEFAULT_CLOCK_DIVIDER};
 use defmt::*;
 use display_interface_spi::SPIInterface;
 use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
@@ -19,15 +19,7 @@ use embassy_rp::spi::Phase;
 use embassy_rp::spi::{Config as SpiConfig, Polarity, Spi};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
-use embassy_time::{Delay, Duration, Timer};
-use embedded_graphics::mono_font::ascii::{FONT_10X20, FONT_5X8};
-use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::prelude::*;
-use embedded_graphics::text::Text;
-use mipidsi::options::{Orientation, Rotation};
-use mipidsi::Builder;
-use mipidsi::models::ST7735s;
+use embassy_time::Timer;
 use st7735::ST7735;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
@@ -62,6 +54,7 @@ async fn main(spawner: Spawner) {
     let cywspi = PioSpi::new(
         &mut pio.common,
         pio.sm0,
+        DEFAULT_CLOCK_DIVIDER,
         pio.irq0,
         cs,
         p.PIN_24,
@@ -102,9 +95,10 @@ async fn main(spawner: Spawner) {
         SpiDeviceWithConfig::new(&spi_bus, Output::new(p.PIN_20, Level::High), display_config);
 
     let dcx = Output::new(p.PIN_22, Level::Low);
-    let mut backlight = Output::new(p.PIN_17, Level::Low);
+    let backlight = Output::new(p.PIN_17, Level::Low);
     let display_reset = Output::new(p.PIN_26, Level::Low);
-    let display = ST7735::init(spi, dcx, bl, rst);
+    let display_spi_interface = SPIInterface::new(display_spi, dcx);
+    let display = ST7735::init(display_spi_interface, backlight, display_reset);
 
     status_led.set_high();
     info!("Everything went fine!");
