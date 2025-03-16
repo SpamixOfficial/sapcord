@@ -2,6 +2,7 @@
 #![no_main]
 
 mod controls;
+mod st7735;
 use core::cell::RefCell;
 
 use controls::{Button, Controls};
@@ -27,6 +28,7 @@ use embedded_graphics::text::Text;
 use mipidsi::options::{Orientation, Rotation};
 use mipidsi::Builder;
 use mipidsi::models::ST7735s;
+use st7735::ST7735;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -100,28 +102,9 @@ async fn main(spawner: Spawner) {
         SpiDeviceWithConfig::new(&spi_bus, Output::new(p.PIN_20, Level::High), display_config);
 
     let dcx = Output::new(p.PIN_22, Level::Low);
-    let di = SPIInterface::new(display_spi, dcx);
     let mut backlight = Output::new(p.PIN_17, Level::Low);
     let display_reset = Output::new(p.PIN_26, Level::Low);
-
-    // Display object
-    let mut display = Builder::new(ST7735s, di)
-        //.display_size(180, 128)
-        .reset_pin(display_reset)
-        .orientation(Orientation::new().rotate(Rotation::Deg90))
-        .init(&mut Delay)
-        .unwrap();
-    
-    display.clear(Rgb565::BLACK).unwrap();
-    backlight.set_high();
-
-    Text::new(
-        "Hello from rust :3",
-        Point::new(0, 0),
-        MonoTextStyle::new(&FONT_5X8, Rgb565::WHITE),
-    )
-    .draw(&mut display)
-    .unwrap();
+    let display = ST7735::init(spi, dcx, bl, rst);
 
     status_led.set_high();
     info!("Everything went fine!");
